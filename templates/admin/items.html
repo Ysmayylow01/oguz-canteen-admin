@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Önümler - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <h1>🍽️ Oguz Canteen - Admin</h1>
+    <a href="/admin">Panel</a>
+    <a href="/admin/categories">Kategoriýalar</a>
+    <a href="/admin/items">Önümler</a>
+    <a href="/admin/orders">Sargytlar</a>
+    <a href="/admin/logout">Çyk</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Täze Önüm Goş</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="text" name="name" placeholder="Önümiň ady" required>
+            <input type="number" name="price" placeholder="Bahasy" step="0.01" required>
+            <select name="category_id" required>
+                <option value="">Kategoriýa saýlaň</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="image" placeholder="Surat URL (hökman däl)">
+            <button type="submit" class="btn btn-success">Goş</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h3>Önümler Sanawy</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Belgi</th>
+                    <th>Ady</th>
+                    <th>Kategoriýa</th>
+                    <th>Bahasy</th>
+                    <th>Elýeterli</th>
+                    <th>Hereketler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.id }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.category.name }}</td>
+                    <td>${{ "%.2f"|format(item.price) }}</td>
+                    <td>
+                        {% if item.available %}
+                            <span style="color: green;">✓ Hawa</span>
+                        {% else %}
+                            <span style="color: red;">✗ Ýok</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/admin/items/toggle/{{ item.id }}" class="btn btn-warning">Üýtget</a>
+                        <a href="/admin/items/delete/{{ item.id }}" 
+                           class="btn btn-danger" 
+                           onclick="return confirm('Bu önümi pozmak isleýärsiňizmi?')">
+                            Poz
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

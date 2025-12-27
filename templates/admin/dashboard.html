@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Oguz Canteen{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <h1>🍽️ Oguz Canteen - Admin</h1>
+    <a href="/admin">Panel</a>
+    <a href="/admin/categories">Kategoriýalar</a>
+    <a href="/admin/items">Önümler</a>
+    <a href="/admin/orders">Sargytlar</a>
+    <a href="/admin/logout">Çyk</a>
+</div>
+
+<div class="container">
+    <h2>Dolandyryş Paneli</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Jemi Kategoriýalar</h3>
+            <div style="font-size: 2.5rem; color: #667eea;">{{ stats.categories }}</div>
+        </div>
+        <div class="card">
+            <h3>Jemi Önümler</h3>
+            <div style="font-size: 2.5rem; color: #48bb78;">{{ stats.items }}</div>
+        </div>
+        <div class="card">
+            <h3>Jemi Sargytlar</h3>
+            <div style="font-size: 2.5rem; color: #ed8936;">{{ stats.orders }}</div>
+        </div>
+        <div class="card">
+            <h3>Garaşýan Sargytlar</h3>
+            <div style="font-size: 2.5rem; color: #f56565;">{{ stats.pending }}</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>Soňky Sargytlar</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Belgi</th>
+                    <th>Müşderi</th>
+                    <th>Jemi</th>
+                    <th>Status</th>
+                    <th>Sene</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr>
+                    <td>#{{ order.id }}</td>
+                    <td>{{ order.customer_name }}</td>
+                    <td>${{ "%.2f"|format(order.total_amount) }}</td>
+                    <td>
+                        {% if order.status == 'pending' %}
+                            <span class="status-badge status-pending">Garaşylýar</span>
+                        {% elif order.status == 'preparing' %}
+                            <span class="status-badge status-preparing">Taýýarlanýar</span>
+                        {% elif order.status == 'ready' %}
+                            <span class="status-badge status-ready">Taýýar</span>
+                        {% else %}
+                            <span class="status-badge status-completed">Tamamlandy</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

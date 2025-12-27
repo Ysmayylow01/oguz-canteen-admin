@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Oguz Canteen - Menýu{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <h1>🍽️ Oguz Canteen</h1>
+    <a href="/">Menýu</a>
+    <a href="/track-order">Sargyt Yzarla</a>
+    <a href="#" onclick="openCart()" style="margin-left: auto;">
+        🛒 Sebetim <span id="cart-count" class="cart-count" style="display: none;">0</span>
+    </a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Biziň Menýumyz</h2>
+        <p>Her gün täze we tagamly naharlar taýýarlanýar</p>
+    </div>
+    
+    {% for category in categories %}
+    <div class="card">
+        <h3>{{ category.name }}</h3>
+        <div class="grid">
+            {% for item in category.items %}
+            {% if item.available %}
+            <div class="food-card">
+                {% if item.image %}
+                <img src="{{ item.image }}" alt="{{ item.name }}">
+                {% else %}
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='200'%3E%3Crect fill='%23ddd' width='250' height='200'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='20'%3ESurat Ýok%3C/text%3E%3C/svg%3E" alt="{{ item.name }}">
+                {% endif %}
+                <div class="food-card-body">
+                    <h3>{{ item.name }}</h3>
+                    <div class="price">${{ "%.2f"|format(item.price) }}</div>
+                    <button class="btn btn-primary" onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">
+                        Sebede Goş
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Sebet Modal -->
+<div id="cartModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeCart()">&times;</span>
+        <h2>Siziň Sebediňiz</h2>
+        <div id="cart-items"></div>
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #ddd;">
+            <h3>Jemi: $<span id="cart-total">0.00</span></h3>
+        </div>
+        <div style="margin-top: 1rem;">
+            <input type="text" id="customer-name" placeholder="Adyňyz" required>
+            <input type="tel" id="customer-phone" placeholder="Telefon Belgiňiz" required>
+            <button class="btn btn-success" onclick="placeOrder()" style="width: 100%; margin-top: 1rem;">
+                Sargyt Et
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    function updateCartDisplay() {
+        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const countEl = document.getElementById('cart-count');
+        if (count > 0) {
+            countEl.textContent = count;
+            countEl.style.display = 'flex';
+        } else {
+            countEl.style.display = 'none';
+        }
+    }
+    
+    function addToCart(id, name, price) {
+        const existing = cart.find(item => item.id === id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            cart.push({ id, name, price, quantity: 1 });
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartDisplay();
+        alert(name + ' sebede goşuldy!');
+    }
+    
+    function openCart() {
+        const modal = document.getElementById('cartModal');
+        const itemsDiv = document.getElementById('cart-items');
+        
+        if (cart.length === 0) {
+            itemsDiv.innerHTML = '<p>Sebediňiz boş</p>';
+            document.getElementById('cart-total').textContent = '0.00';
+        } else {
+            let html = '';
+            let total = 0;
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+                html += `
+                    <div style="padding: 1rem; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            $${item.price.toFixed(2)} x ${item.quantity} = $${subtotal.toFixed(2)}
+                        </div>
+                        <div>
+                            <button class="btn btn-warning" onclick="updateQuantity(${index}, -1)" style="padding: 0.3rem 0.6rem;">-</button>
+                            <button class="btn btn-warning" onclick="updateQuantity(${index}, 1)" style="padding: 0.3rem 0.6rem;">+</button>
+                            <button class="btn btn-danger" onclick="removeFromCart(${index})" style="padding: 0.3rem 0.6rem;">×</button>
+                        </div>
+                    </div>
+                `;
+            });
+            itemsDiv.innerHTML = html;
+            document.getElementById('cart-total').textContent = total.toFixed(2);
+        }
+        modal.style.display = 'block';
+    }
+    
+    function closeCart() {
+        document.getElementById('cartModal').style.display = 'none';
+    }
+    
+    function updateQuantity(index, change) {
+        cart[index].quantity += change;
+        if (cart[index].quantity <= 0) {
+            cart.splice(index, 1);
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartDisplay();
+        openCart();
+    }
+    
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartDisplay();
+        openCart();
+    }
+    
+    function placeOrder() {
+        const name = document.getElementById('customer-name').value;
+        const phone = document.getElementById('customer-phone').value;
+        
+        if (!name || !phone) {
+            alert('Adyňyzy we telefon belgiňizi giriziň');
+            return;
+        }
+        
+        if (cart.length === 0) {
+            alert('Sebediňiz boş');
+            return;
+        }
+        
+        fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, items: cart })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Sargyt üstünlikli ýerleşdirildi! Sargyt belgiňiz: ' + data.order_id);
+                cart = [];
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateCartDisplay();
+                closeCart();
+                window.location.href = '/track-order?id=' + data.order_id;
+            } else {
+                alert('Ýalňyşlyk ýüze çykdy: ' + data.message);
+            }
+        });
+    }
+    
+    updateCartDisplay();
+</script>
+{% endblock %}

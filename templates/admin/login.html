@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Girişi - Oguz Canteen{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <h1>🍽️ Oguz Canteen - Admin</h1>
+</div>
+
+<div class="container">
+    <div class="card" style="max-width: 400px; margin: 4rem auto;">
+        <h2>Admin Giriş</h2>
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            <input type="text" name="username" placeholder="Ulanyjy ady" required>
+            <input type="password" name="password" placeholder="Parol" required>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Giriş</button>
+        </form>
+        <p style="margin-top: 1rem; text-align: center; color: #666;">
+            Default: admin / admin123
+        </p>
+    </div>
+</div>
+{% endblock %}

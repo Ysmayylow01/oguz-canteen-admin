@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Kategoriýalar - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <h1>🍽️ Oguz Canteen - Admin</h1>
+    <a href="/admin">Panel</a>
+    <a href="/admin/categories">Kategoriýalar</a>
+    <a href="/admin/items">Önümler</a>
+    <a href="/admin/orders">Sargytlar</a>
+    <a href="/admin/logout">Çyk</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Kategoriýalary Dolandyr</h2>
+        <form method="POST" style="display: flex; gap: 1rem;">
+            <input type="text" name="name" placeholder="Kategoriýa ady" required style="flex: 1;">
+            <button type="submit" class="btn btn-success">Goş</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Belgi</th>
+                    <th>Ady</th>
+                    <th>Önümler sany</th>
+                    <th>Hereketler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>{{ category.id }}</td>
+                    <td>{{ category.name }}</td>
+                    <td>{{ category.items|length }}</td>
+                    <td>
+                        <a href="/admin/categories/delete/{{ category.id }}" 
+                           class="btn btn-danger" 
+                           onclick="return confirm('Bu kategoriýany we ähli önümlerini pozmak isleýärsiňizmi?')">
+                            Poz
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

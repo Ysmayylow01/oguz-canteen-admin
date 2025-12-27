@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Sargyt Yzarla - Oguz Canteen{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <h1>🍽️ Oguz Canteen</h1>
+    <a href="/">Menýu</a>
+    <a href="/track-order">Sargyt Yzarla</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Sargydy Yzarlaň</h2>
+        <input type="number" id="order-id" placeholder="Sargyt belgisini giriziň" value="{{ order_id or '' }}">
+        <button class="btn btn-primary" onclick="trackOrder()">Yzarla</button>
+    </div>
+    
+    <div id="order-details"></div>
+</div>
+
+<script>
+    function trackOrder() {
+        const orderId = document.getElementById('order-id').value;
+        if (!orderId) {
+            alert('Sargyt belgisini giriziň');
+            return;
+        }
+        
+        fetch('/api/orders/' + orderId)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const order = data.order;
+                    const statusNames = {
+                        'pending': 'Garaşylýar',
+                        'preparing': 'Taýýarlanýar',
+                        'ready': 'Taýýar',
+                        'completed': 'Tamamlandy'
+                    };
+                    
+                    let html = `
+                        <div class="card">
+                            <h3>Sargyt #${order.id}</h3>
+                            <p><strong>Müşderi:</strong> ${order.customer_name}</p>
+                            <p><strong>Telefon:</strong> ${order.customer_phone}</p>
+                            <p><strong>Status:</strong> <span class="status-badge status-${order.status}">${statusNames[order.status]}</span></p>
+                            <p><strong>Jemi:</strong> $${order.total_amount.toFixed(2)}</p>
+                            <p><strong>Sene:</strong> ${new Date(order.created_at).toLocaleString('tk-TM')}</p>
+                            
+                            <h4 style="margin-top: 1rem;">Önümler:</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Önüm</th>
+                                        <th>Mukdar</th>
+                                        <th>Baha</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    order.items.forEach(item => {
+                        html += `
+                            <tr>
+                                <td>${item.food_item.name}</td>
+                                <td>${item.quantity}</td>
+                                <td>$${item.price.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    document.getElementById('order-details').innerHTML = html;
+                } else {
+                    document.getElementById('order-details').innerHTML = `
+                        <div class="card alert alert-error">
+                            Sargyt tapylmady
+                        </div>
+                    `;
+                }
+            });
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('id');
+    if (orderId) {
+        document.getElementById('order-id').value = orderId;
+        trackOrder();
+    }
+</script>
+{% endblock %}
