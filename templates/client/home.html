@@ -1,183 +1,356 @@
 {% extends "base.html" %}
 
-{% block title %}Oguz Canteen - Menýu{% endblock %}
+{% block title %}Oguz Canteen{% endblock %}
 
 {% block content %}
-<div class="navbar">
-    <h1>🍽️ Oguz Canteen</h1>
-    <a href="/">Menýu</a>
-    <a href="/track-order">Sargyt Yzarla</a>
-    <a href="#" onclick="openCart()" style="margin-left: auto;">
-        🛒 Sebetim <span id="cart-count" class="cart-count" style="display: none;">0</span>
-    </a>
+
+<div class="navbar glass fade-in">
+    <h2>🍽️ Oguz Canteen</h2>
+
+    <div>
+        <a href="/">Menýu</a>
+        <a href="/track-order">Sargyt</a>
+        <a href="#" onclick="openCart()" class="cart-btn">
+            🛒 <span id="cart-count">0</span>
+        </a>
+    </div>
 </div>
 
-<div class="container">
-    <div class="card">
-        <h2>Biziň Menýumyz</h2>
-        <p>Her gün täze we tagamly naharlar taýýarlanýar</p>
+<div class="container fade-in">
+
+    <div class="slider glass">
+
+    <div class="slides" id="slides">
+        <img src="{{ url_for('static', filename='img/banner1.png') }}">
+        <img src="{{ url_for('static', filename='img/banner2.png') }}">
     </div>
-    
+
+    <div class="dots">
+        <span onclick="goSlide(0)"></span>
+        <span onclick="goSlide(1)"></span>
+    </div>
+
+</div>
+    <div class="hero glass">
+        <h1>🍴 Tagamly Naharlary Synap Gör!</h1>
+        <p>Her gün täze taýýarlanan naharlar</p>
+    </div>
+
     {% for category in categories %}
-    <div class="card">
-        <h3>{{ category.name }}</h3>
+    <div class="section">
+        <h2>{{ category.name }}</h2>
+
         <div class="grid">
             {% for item in category.items %}
             {% if item.available %}
             <div class="food-card">
-                {% if item.image %}
-                <img src="{{ item.image }}" alt="{{ item.name }}">
-                {% else %}
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='200'%3E%3Crect fill='%23ddd' width='250' height='200'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='20'%3ESurat Ýok%3C/text%3E%3C/svg%3E" alt="{{ item.name }}">
-                {% endif %}
-                <div class="food-card-body">
+
+                <img src="{{ item.image or 'https://via.placeholder.com/300x200' }}">
+
+                <div class="food-body">
                     <h3>{{ item.name }}</h3>
-                    <div class="price">${{ "%.2f"|format(item.price) }}</div>
-                    <button class="btn btn-primary" onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">
-                        Sebede Goş
+                    <div class="price">{{ "%.0f"|format(item.price) }} manat</div>
+
+                    <button onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">
+                        + Sebede goş
                     </button>
                 </div>
+
             </div>
             {% endif %}
             {% endfor %}
         </div>
     </div>
     {% endfor %}
+
 </div>
 
-<!-- Sebet Modal -->
+<!-- CART MODAL -->
 <div id="cartModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeCart()">&times;</span>
-        <h2>Siziň Sebediňiz</h2>
+    <div class="modal-box glass">
+
+        <h2>🛒 Sebet</h2>
+
         <div id="cart-items"></div>
-        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #ddd;">
-            <h3>Jemi: $<span id="cart-total">0.00</span></h3>
-        </div>
-        <div style="margin-top: 1rem;">
-            <input type="text" id="customer-name" placeholder="Adyňyz" required>
-            <input type="tel" id="customer-phone" placeholder="Telefon Belgiňiz" required>
-            <button class="btn btn-success" onclick="placeOrder()" style="width: 100%; margin-top: 1rem;">
-                Sargyt Et
-            </button>
-        </div>
+
+        <h3>Jemi: <span id="cart-total">0</span> manat</h3>
+
+        <input type="text" id="customer-name" placeholder="👤 Adyňyz">
+        <input type="tel" id="customer-phone" placeholder="📞 Telefon">
+
+        <button class="order-btn" onclick="placeOrder()">Sargyt Et</button>
+
+        <button class="close-btn" onclick="closeCart()">Ýap</button>
     </div>
 </div>
 
+<style>
+
+/* HERO */
+.hero {
+    text-align: center;
+    padding: 40px;
+    margin-bottom: 30px;
+}
+/* SLIDER */
+.slider {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    height: clamp(160px, 25vw, 420px);
+}
+
+.slides {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s ease;
+}
+
+.slides img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    flex: 0 0 100%;
+}
+
+/* DOTS */
+.dots {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+}
+
+.dots span {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 5px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.dots span.active {
+    background: #3D9AF0;
+    transform: scale(1.2);
+}
+/* GRID */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+/* FOOD CARD */
+.food-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: 0.3s;
+}
+
+.food-card:hover {
+    transform: translateY(-5px);
+}
+
+.food-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    object-position: center;
+}
+.food-body {
+    padding: 15px;
+}
+
+.price {
+    color: #3D9AF0;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.food-body button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: #3D9AF0;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.food-body button:hover {
+    background: #2563eb;
+}
+
+/* CART BUTTON */
+.cart-btn {
+    position: relative;
+}
+
+#cart-count {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: red;
+    border-radius: 50%;
+    padding: 3px 6px;
+    font-size: 12px;
+}
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-box {
+    width: 350px;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+/* INPUT */
+.modal-box input {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+/* BUTTONS */
+.order-btn {
+    width: 100%;
+    margin-top: 15px;
+    padding: 12px;
+    background: #3D9AF0;
+    border: none;
+    border-radius: 10px;
+    color: white;
+}
+
+.close-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: #444;
+    border: none;
+    border-radius: 10px;
+    color: white;
+}
+
+</style>
+
 <script>
-    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    
-    function updateCartDisplay() {
-        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-        const countEl = document.getElementById('cart-count');
-        if (count > 0) {
-            countEl.textContent = count;
-            countEl.style.display = 'flex';
-        } else {
-            countEl.style.display = 'none';
-        }
-    }
-    
-    function addToCart(id, name, price) {
-        const existing = cart.find(item => item.id === id);
-        if (existing) {
-            existing.quantity++;
-        } else {
-            cart.push({ id, name, price, quantity: 1 });
-        }
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartDisplay();
-        alert(name + ' sebede goşuldy!');
-    }
-    
-    function openCart() {
-        const modal = document.getElementById('cartModal');
-        const itemsDiv = document.getElementById('cart-items');
-        
-        if (cart.length === 0) {
-            itemsDiv.innerHTML = '<p>Sebediňiz boş</p>';
-            document.getElementById('cart-total').textContent = '0.00';
-        } else {
-            let html = '';
-            let total = 0;
-            cart.forEach((item, index) => {
-                const subtotal = item.price * item.quantity;
-                total += subtotal;
-                html += `
-                    <div style="padding: 1rem; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>${item.name}</strong><br>
-                            $${item.price.toFixed(2)} x ${item.quantity} = $${subtotal.toFixed(2)}
-                        </div>
-                        <div>
-                            <button class="btn btn-warning" onclick="updateQuantity(${index}, -1)" style="padding: 0.3rem 0.6rem;">-</button>
-                            <button class="btn btn-warning" onclick="updateQuantity(${index}, 1)" style="padding: 0.3rem 0.6rem;">+</button>
-                            <button class="btn btn-danger" onclick="removeFromCart(${index})" style="padding: 0.3rem 0.6rem;">×</button>
-                        </div>
-                    </div>
-                `;
-            });
-            itemsDiv.innerHTML = html;
-            document.getElementById('cart-total').textContent = total.toFixed(2);
-        }
-        modal.style.display = 'block';
-    }
-    
-    function closeCart() {
-        document.getElementById('cartModal').style.display = 'none';
-    }
-    
-    function updateQuantity(index, change) {
-        cart[index].quantity += change;
-        if (cart[index].quantity <= 0) {
-            cart.splice(index, 1);
-        }
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartDisplay();
-        openCart();
-    }
-    
-    function removeFromCart(index) {
-        cart.splice(index, 1);
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartDisplay();
-        openCart();
-    }
-    
-    function placeOrder() {
-        const name = document.getElementById('customer-name').value;
-        const phone = document.getElementById('customer-phone').value;
-        
-        if (!name || !phone) {
-            alert('Adyňyzy we telefon belgiňizi giriziň');
-            return;
-        }
-        
-        if (cart.length === 0) {
-            alert('Sebediňiz boş');
-            return;
-        }
-        
-        fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, phone, items: cart })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert('Sargyt üstünlikli ýerleşdirildi! Sargyt belgiňiz: ' + data.order_id);
-                cart = [];
-                localStorage.setItem('cart', JSON.stringify(cart));
-                updateCartDisplay();
-                closeCart();
-                window.location.href = '/track-order?id=' + data.order_id;
-            } else {
-                alert('Ýalňyşlyk ýüze çykdy: ' + data.message);
-            }
-        });
-    }
-    
+
+let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+function updateCartDisplay() {
+    const count = cart.reduce((s, i) => s + i.quantity, 0);
+    document.getElementById('cart-count').innerText = count;
+}
+
+function addToCart(id, name, price) {
+    let item = cart.find(i => i.id === id);
+    if (item) item.quantity++;
+    else cart.push({id,name,price,quantity:1});
+
+    localStorage.setItem('cart', JSON.stringify(cart));
     updateCartDisplay();
+}
+
+/* CART OPEN */
+function openCart() {
+    let html = '';
+    let total = 0;
+
+    cart.forEach((item,i)=>{
+        let sub = item.price * item.quantity;
+        total += sub;
+
+        html += `
+        <div style="margin:10px 0">
+            ${item.name} x ${item.quantity} = ${sub}
+            <button onclick="updateQuantity(${i},1)">+</button>
+            <button onclick="updateQuantity(${i},-1)">-</button>
+        </div>`;
+    });
+
+    document.getElementById('cart-items').innerHTML = html;
+    document.getElementById('cart-total').innerText = total;
+    document.getElementById('cartModal').style.display='flex';
+}
+
+function closeCart(){
+    document.getElementById('cartModal').style.display='none';
+}
+
+function updateQuantity(i,c){
+    cart[i].quantity+=c;
+    if(cart[i].quantity<=0) cart.splice(i,1);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    openCart();
+}
+
+function placeOrder(){
+    let name = document.getElementById('customer-name').value;
+    let phone = document.getElementById('customer-phone').value;
+
+    fetch('/api/orders',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,phone,items:cart})
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        if(d.success){
+            cart=[];
+            localStorage.setItem('cart','[]');
+            window.location='/track-order?id='+d.order_id;
+        }
+    });
+}
+
+updateCartDisplay();
+let currentSlide = 0;
+const slides = document.getElementById('slides');
+const dots = document.querySelectorAll('.dots span');
+
+function showSlide(index) {
+    currentSlide = index;
+    slides.style.transform = `translateX(-${index * 100}%)`;
+
+    dots.forEach(dot => dot.classList.remove('active'));
+    dots[index].classList.add('active');
+}
+
+function nextSlide() {
+    currentSlide = (currentSlide + 1) % dots.length;
+    showSlide(currentSlide);
+}
+
+function goSlide(index) {
+    showSlide(index);
+}
+
+// AUTO SCROLL
+setInterval(nextSlide, 3000);
+
+// INIT
+showSlide(0);
+
 </script>
+
 {% endblock %}

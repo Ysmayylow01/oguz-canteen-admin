@@ -1,26 +1,107 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Girişi - Oguz Canteen{% endblock %}
+{% block title %}Admin Login{% endblock %}
 
 {% block content %}
-<div class="navbar">
-    <h1>🍽️ Oguz Canteen - Admin</h1>
+
+<div class="navbar glass fade-in">
+    <h2>🍽️ Oguz Canteen</h2>
 </div>
 
-<div class="container">
-    <div class="card" style="max-width: 400px; margin: 4rem auto;">
-        <h2>Admin Giriş</h2>
+<div class="container fade-in">
+
+    <div class="login-card glass">
+        <h2>🔐 Admin Giriş</h2>
+
         {% if error %}
-        <div class="alert alert-error">{{ error }}</div>
+        <div class="error-box">
+            {{ error }}
+        </div>
         {% endif %}
-        <form method="POST">
-            <input type="text" name="username" placeholder="Ulanyjy ady" required>
-            <input type="password" name="password" placeholder="Parol" required>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Giriş</button>
+
+        <form method="POST" class="login-form">
+            <input type="text" name="username" placeholder="👤 Ulanyjy ady" required>
+            <input type="password" name="password" placeholder="🔒 Parol" required>
+
+            <button type="submit">Giriş</button>
         </form>
-        <p style="margin-top: 1rem; text-align: center; color: #666;">
-            Default: admin / admin123
+
+        <p class="hint">
+            admin / admin123
         </p>
     </div>
+
 </div>
+
+<style>
+
+/* LOGIN CARD */
+.login-card {
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 30px;
+    text-align: center;
+}
+
+/* FORM */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.login-form input {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    transition: 0.3s;
+}
+
+.login-form input::placeholder {
+    color: #94a3b8;
+}
+
+.login-form input:focus {
+    background: rgba(255,255,255,0.15);
+}
+
+/* BUTTON */
+.login-form button {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #3D9AF0;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.login-form button:hover {
+    background: #2563eb;
+    transform: scale(1.03);
+}
+
+/* ERROR */
+.error-box {
+    background: rgba(255,0,0,0.2);
+    color: #ff6b6b;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+/* HINT */
+.hint {
+    margin-top: 15px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+</style>
+
 {% endblock %}

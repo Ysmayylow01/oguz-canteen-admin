@@ -1,57 +1,78 @@
 {% extends "base.html" %}
 
-{% block title %}Sargytlar - Admin Panel{% endblock %}
+{% block title %}Sargytlar{% endblock %}
 
 {% block content %}
-<div class="navbar">
-    <h1>🍽️ Oguz Canteen - Admin</h1>
-    <a href="/admin">Panel</a>
-    <a href="/admin/categories">Kategoriýalar</a>
-    <a href="/admin/items">Önümler</a>
-    <a href="/admin/orders">Sargytlar</a>
-    <a href="/admin/logout">Çyk</a>
+
+<div class="navbar glass fade-in">
+    <h2>📦 Sargytlar</h2>
+    <div>
+        <a href="/admin">Dashboard</a>
+        <a href="/admin/categories">Kategoriýa</a>
+        <a href="/admin/items">Önüm</a>
+        <a href="/admin/orders">Sargyt</a>
+        <a href="/admin/logout">Çyk</a>
+    </div>
 </div>
 
-<div class="container">
-    <div class="card">
-        <h2>Sargytlary Dolandyr</h2>
+<div class="container fade-in">
+
+    <div class="card glass">
+        <h3>📋 Sargytlary dolandyr</h3>
+
         <table>
             <thead>
                 <tr>
-                    <th>Belgi</th>
+                    <th>#</th>
                     <th>Müşderi</th>
                     <th>Telefon</th>
                     <th>Jemi</th>
                     <th>Status</th>
                     <th>Sene</th>
-                    <th>Hereket</th>
+                    <th>Üýtget</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for order in orders %}
                 <tr>
                     <td>#{{ order.id }}</td>
-                    <td>{{ order.customer_name }}</td>
+                    <td><strong>{{ order.customer_name }}</strong></td>
                     <td>{{ order.customer_phone }}</td>
                     <td>{{ "%.0f"|format(order.total_amount) }} manat</td>
+
                     <td>
-                        {% if order.status == 'pending' %}
-                            <span class="status-badge status-pending">Garaşylýar</span>
-                        {% elif order.status == 'preparing' %}
-                            <span class="status-badge status-preparing">Taýýarlanýar</span>
-                        {% elif order.status == 'ready' %}
-                            <span class="status-badge status-ready">Taýýar</span>
-                        {% else %}
-                            <span class="status-badge status-completed">Tamamlandy</span>
-                        {% endif %}
+                        <span class="status 
+                        {% if order.status == 'pending' %}pending
+                        {% elif order.status == 'preparing' %}preparing
+                        {% elif order.status == 'ready' %}ready
+                        {% else %}completed{% endif %}">
+                            {{ order.status }}
+                        </span>
                     </td>
+
                     <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+
                     <td>
-                        <select onchange="updateOrderStatus({{ order.id }}, this.value)">
-                            <option value="pending" {{ 'selected' if order.status == 'pending' }}>Garaşylýar</option>
-                            <option value="preparing" {{ 'selected' if order.status == 'preparing' }}>Taýýarlanýar</option>
-                            <option value="ready" {{ 'selected' if order.status == 'ready' }}>Taýýar</option>
-                            <option value="completed" {{ 'selected' if order.status == 'completed' }}>Tamamlandy</option>
+                        <select class="status-select"
+                                data-id="{{ order.id }}"
+                                onchange="updateOrderStatus(this)">
+                            
+                            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>
+                                Garaşylýar
+                            </option>
+
+                            <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>
+                                Taýýarlanýar
+                            </option>
+
+                            <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>
+                                Taýýar
+                            </option>
+
+                            <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>
+                                Tamamlandy
+                            </option>
                         </select>
                     </td>
                 </tr>
@@ -59,24 +80,85 @@
             </tbody>
         </table>
     </div>
+
 </div>
 
+<!-- STYLE -->
+<style>
+
+select {
+    background: rgba(255,255,255,0.08);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    outline: none;
+}
+
+/* option-lar üçin */
+select option {
+    background: #1e293b;
+    color: white;
+}
+
+/* HOVER EFFECT */
+.status-select:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+td strong {
+    color: white;
+}
+
+</style>
+
+<!-- SCRIPT -->
 <script>
-    function updateOrderStatus(orderId, status) {
-        fetch('/admin/orders/update/' + orderId, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert('Sargyt statusy täzelendi!');
-                location.reload();
-            } else {
-                alert('Ýalňyşlyk ýüze çykdy');
-            }
-        });
-    }
+
+function updateOrderStatus(el) {
+    const orderId = el.getAttribute("data-id");
+    const status = el.value;
+
+    fetch('/admin/orders/update/' + orderId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast("✅ Status täzelendi");
+        } else {
+            showToast("❌ Ýalňyşlyk boldy");
+        }
+    });
+}
+
+/* 🔥 TOAST NOTIFICATION */
+function showToast(text) {
+    const toast = document.createElement("div");
+    toast.innerText = text;
+
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.right = "20px";
+    toast.style.padding = "10px 15px";
+    toast.style.background = "#3D9AF0";
+    toast.style.color = "white";
+    toast.style.borderRadius = "8px";
+    toast.style.opacity = "0";
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = "1";
+    }, 100);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 2000);
+}
+
 </script>
+
 {% endblock %}

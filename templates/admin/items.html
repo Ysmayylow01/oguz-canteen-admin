@@ -1,73 +1,198 @@
 {% extends "base.html" %}
 
-{% block title %}Önümler - Admin Panel{% endblock %}
+{% block title %}Önümler{% endblock %}
 
 {% block content %}
-<div class="navbar">
-    <h1>🍽️ Oguz Canteen - Admin</h1>
-    <a href="/admin">Panel</a>
-    <a href="/admin/categories">Kategoriýalar</a>
-    <a href="/admin/items">Önümler</a>
-    <a href="/admin/orders">Sargytlar</a>
-    <a href="/admin/logout">Çyk</a>
+
+<div class="navbar glass fade-in">
+    <h2>🍔 Önümler</h2>
+    <div>
+        <a href="/admin">Dashboard</a>
+        <a href="/admin/categories">Kategoriýa</a>
+        <a href="/admin/items">Önüm</a>
+        <a href="/admin/orders">Sargyt</a>
+        <a href="/admin/logout">Çyk</a>
+    </div>
 </div>
 
-<div class="container">
-    <div class="card">
-        <h2>Täze Önüm Goş</h2>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="text" name="name" placeholder="Önümiň ady" required>
+<div class="container fade-in">
+
+    <!-- ADD ITEM -->
+    <div class="card glass">
+        <h3>➕ Täze önüm goş</h3>
+
+        <form method="POST" class="form">
+            <input type="text" name="name" placeholder="Önümiň ady..." required>
             <input type="number" name="price" placeholder="Bahasy" step="0.01" required>
+
             <select name="category_id" required>
                 <option value="">Kategoriýa saýlaň</option>
                 {% for category in categories %}
                 <option value="{{ category.id }}">{{ category.name }}</option>
                 {% endfor %}
             </select>
-            <input type="text" name="image" placeholder="Surat URL (hökman däl)">
-            <button type="submit" class="btn btn-success">Goş</button>
+
+            <input type="text" name="image" placeholder="Surat URL (islege görä)">
+            <button type="submit">Goş</button>
         </form>
     </div>
-    
-    <div class="card">
-        <h3>Önümler Sanawy</h3>
+
+    <!-- ITEM TABLE -->
+    <div class="card glass" style="margin-top:20px;">
+        <h3>📋 Önümler sanawy</h3>
+
         <table>
             <thead>
                 <tr>
-                    <th>Belgi</th>
+                    <th>#</th>
                     <th>Ady</th>
                     <th>Kategoriýa</th>
                     <th>Bahasy</th>
-                    <th>Elýeterli</th>
-                    <th>Hereketler</th>
+                    <th>Status</th>
+                    <th>Hereket</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for item in items %}
                 <tr>
                     <td>{{ item.id }}</td>
-                    <td>{{ item.name }}</td>
+
+                    <td>
+                        <strong>{{ item.name }}</strong>
+                    </td>
+
                     <td>{{ item.category.name }}</td>
+
                     <td>{{ "%.0f"|format(item.price) }} manat</td>
+
                     <td>
                         {% if item.available %}
-                            <span style="color: green;">✓ Hawa</span>
+                            <span class="status ready">✔ Elýeterli</span>
                         {% else %}
-                            <span style="color: red;">✗ Ýok</span>
+                            <span class="status pending">✖ Elýeterli däl</span>
                         {% endif %}
                     </td>
+
                     <td>
-                        <a href="/admin/items/toggle/{{ item.id }}" class="btn btn-warning">Üýtget</a>
-                        <a href="/admin/items/delete/{{ item.id }}" 
-                           class="btn btn-danger" 
-                           onclick="return confirm('Bu önümi pozmak isleýärsiňizmi?')">
-                            Poz
-                        </a>
+                        <button class="action-btn edit"
+                            onclick="toggleItem({{ item.id }})">
+                            🔄
+                        </button>
+
+                        <button class="action-btn delete"
+                            onclick="deleteItem({{ item.id }})">
+                            🗑
+                        </button>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
 </div>
+
+<!-- STYLE -->
+<style>
+
+/* FORM */
+.form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.form input, .form select {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+.form select {
+    background: rgba(255,255,255,0.08);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    outline: none;
+}
+
+.form select option {
+    background: #0f172a;
+    color: white;
+}
+
+.form input::placeholder {
+    color: #94a3b8;
+}
+
+.form button {
+    background: #3D9AF0;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.form button:hover {
+    background: #2563eb;
+}
+
+/* ACTION BUTTONS */
+.action-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: 0.3s;
+}
+
+.action-btn.edit {
+    background: rgba(0,150,255,0.2);
+    color: #3D9AF0;
+}
+
+.action-btn.delete {
+    background: rgba(255,0,0,0.2);
+    color: #ff6b6b;
+}
+
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+/* STATUS override (reuse base) */
+.ready {
+    background: rgba(0,255,150,0.2);
+    color: #00ffa6;
+}
+
+.pending {
+    background: rgba(255,0,0,0.2);
+    color: #ff6b6b;
+}
+
+</style>
+
+<!-- SCRIPT -->
+<script>
+
+function toggleItem(id) {
+    window.location.href = "/admin/items/toggle/" + id;
+}
+
+function deleteItem(id) {
+    if (confirm("Bu önümi pozmak isleýärsiňizmi?")) {
+        window.location.href = "/admin/items/delete/" + id;
+    }
+}
+
+</script>
+
 {% endblock %}
