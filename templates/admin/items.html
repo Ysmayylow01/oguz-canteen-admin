@@ -48,7 +48,7 @@
                     <td>{{ item.id }}</td>
                     <td>{{ item.name }}</td>
                     <td>{{ item.category.name }}</td>
-                    <td>${{ "%.2f"|format(item.price) }}</td>
+                    <td>{{ "%.0f"|format(item.price) }} manat</td>
                     <td>
                         {% if item.available %}
                             <span style="color: green;">✓ Hawa</span>
