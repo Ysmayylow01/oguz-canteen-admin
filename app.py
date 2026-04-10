@@ -1,13 +1,28 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from models import db, Admin, Category, FoodItem, Order, OrderItem
+import os
+import uuid
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'oguz-canteen-secret-key-2024'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///oguz_canteen.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Upload config
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 db.init_app(app)
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 # ==================== CLIENT ROUTES ====================
@@ -161,11 +176,24 @@ def admin_items():
         return redirect('/admin/login')
     
     if request.method == 'POST':
+        image_path = ''
+        
+        # Surat upload
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                # Faýl adyny üýtgeşik et
+                ext = file.filename.rsplit('.', 1)[1].lower()
+                filename = f"{uuid.uuid4().hex}.{ext}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                image_path = f"/static/uploads/{filename}"
+        
         item = FoodItem(
             name=request.form['name'],
             price=float(request.form['price']),
             category_id=int(request.form['category_id']),
-            image=request.form.get('image', '')
+            image=image_path
         )
         db.session.add(item)
         db.session.commit()
@@ -195,6 +223,13 @@ def delete_item(id):
         return redirect('/admin/login')
     
     item = FoodItem.query.get_or_404(id)
+    
+    # Suraty hem poz (eger bar bolsa we local faýl bolsa)
+    if item.image and item.image.startswith('/static/uploads/'):
+        image_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), item.image.lstrip('/'))
+        if os.path.exists(image_file):
+            os.remove(image_file)
+    
     db.session.delete(item)
     db.session.commit()
     return redirect('/admin/items')
