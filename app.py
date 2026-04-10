@@ -19,13 +19,17 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db.init_app(app)
-
+BASE_URL = "http://194.246.82.132:5000"
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 # ==================== CLIENT ROUTES ====================
+def format_image_url(image):
+    if image and not image.startswith(('http://', 'https://')):
+        return f"{BASE_URL}{image}"
+    return image
 
 @app.route('/')
 def home():
@@ -328,7 +332,7 @@ def api_get_categories():
                 'id': item.id,
                 'name': item.name,
                 'price': item.price,
-                'image': item.image,
+                'image': format_image_url(item.image),
                 'category_id': item.category_id,
                 'available': item.available
             } for item in category.items if item.available]
@@ -344,7 +348,7 @@ def api_get_all_foods():
         'id': food.id,
         'name': food.name,
         'price': food.price,
-        'image': food.image,
+        'image': format_image_url(food.image),
         'category_id': food.category_id,
         'available': food.available
     } for food in foods]
@@ -362,7 +366,7 @@ def api_get_foods_by_category(category_id):
         'id': food.id,
         'name': food.name,
         'price': food.price,
-        'image': food.image,
+        'image': format_image_url(food.image),
         'category_id': food.category_id,
         'available': food.available
     } for food in foods]
