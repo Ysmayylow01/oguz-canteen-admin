@@ -61,3 +61,16 @@ class OrderItem(db.Model):
 
     def __repr__(self):
         return f'<OrderItem {self.id}>'
+
+
+class WeeklyMeal(db.Model):
+    """Hepdäniň naharlary üçin model (0=Duşenbe ... 6=Ýekşenbe)"""
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Float, nullable=True)
+    image = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        return f'<WeeklyMeal {self.day_of_week}:{self.name}>'

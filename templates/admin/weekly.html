@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Hepdäniň naharlary{% endblock %}
+
+{% block content %}
+
+<div class="navbar glass fade-in">
+    <h2>📅 Hepdäniň naharlary</h2>
+    <div>
+        <a href="/admin">Dashboard</a>
+        <a href="/admin/categories">Kategoriýa</a>
+        <a href="/admin/items">Önüm</a>
+        <a href="/admin/weekly">Hepde</a>
+        <a href="/admin/orders">Sargyt</a>
+        <a href="/admin/logout">Çyk</a>
+    </div>
+</div>
+
+<div class="container fade-in">
+
+    <div class="card glass">
+        <h3>➕ Gün üçin nahar goş</h3>
+
+        <form method="POST" enctype="multipart/form-data" class="form">
+            <select name="day_of_week" required>
+                <option value="">Gün saýlaň</option>
+                {% for name in day_names %}
+                <option value="{{ loop.index0 }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="text" name="name" placeholder="Naharyň ady..." required>
+            <input type="number" name="price" placeholder="Bahasy (islege görä)" step="0.01">
+            <input type="text" name="description" placeholder="Düşündiriş (islege görä)">
+
+            <label class="file-upload-label">
+                <span id="file-name">📷 Surat saýlaň</span>
+                <input type="file" name="image" accept="image/*" onchange="updateFileName(this)">
+            </label>
+            <button type="submit">Goş</button>
+        </form>
+    </div>
+
+    {% for day in weekly_days %}
+    <div class="card glass" style="margin-top:20px;">
+        <h3>🗓 {{ day.name }}</h3>
+
+        {% if day.meals %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Surat</th>
+                    <th>Ady</th>
+                    <th>Düşündiriş</th>
+                    <th>Bahasy</th>
+                    <th>Hereket</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for meal in day.meals %}
+                <tr>
+                    <td>{{ meal.id }}</td>
+                    <td>
+                        {% if meal.image %}
+                        <img src="{{ meal.image }}" style="width:60px;height:45px;object-fit:cover;border-radius:8px;">
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ meal.name }}</strong></td>
+                    <td>{{ meal.description or '—' }}</td>
+                    <td>{% if meal.price %}{{ "%.0f"|format(meal.price) }} manat{% else %}—{% endif %}</td>
+                    <td>
+                        <button class="action-btn delete" onclick="deleteWeekly({{ meal.id }})">🗑</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#94a3b8;margin-top:10px;">Bu gün üçin nahar ýok.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+</div>
+
+<style>
+.form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.form input, .form select {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+.form select option { background: #0f172a; color: white; }
+.form input::placeholder { color: #94a3b8; }
+.form button {
+    background: #3D9AF0;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.form button:hover { background: #2563eb; }
+
+.file-upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: 0.3s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.file-upload-label:hover { background: rgba(255,255,255,0.15); }
+.file-upload-label input[type="file"] { display: none; }
+
+.action-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: 0.3s;
+}
+.action-btn.delete { background: rgba(255,0,0,0.2); color: #ff6b6b; }
+.action-btn:hover { transform: scale(1.1); }
+</style>
+
+<script>
+function deleteWeekly(id) {
+    if (confirm("Bu naharyny pozmak isleýärsiňizmi?")) {
+        window.location.href = "/admin/weekly/delete/" + id;
+    }
+}
+function updateFileName(input) {
+    var label = document.getElementById('file-name');
+    if (input.files && input.files[0]) {
+        label.textContent = '📷 ' + input.files[0].name;
+    } else {
+        label.textContent = '📷 Surat saýlaň';
+    }
+}
+</script>
+
+{% endblock %}

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from models import db, Admin, Category, FoodItem, Order, OrderItem
+from models import db, Admin, Category, FoodItem, Order, OrderItem, WeeklyMeal
 import os
 import uuid
 
@@ -31,11 +31,32 @@ def format_image_url(image):
         return f"{BASE_URL}{image}"
     return image
 
+DAY_NAMES_TK = ['Duşenbe', 'Sişenbe', 'Çarşenbe', 'Penşenbe', 'Anna', 'Şenbe', 'Ýekşenbe']
+
+
+def _group_weekly_meals():
+    """Hepdäniň naharlaryny günler boýunça toparlamak"""
+    meals = WeeklyMeal.query.order_by(WeeklyMeal.day_of_week, WeeklyMeal.id).all()
+    days = [{'index': i, 'name': name, 'meals': []} for i, name in enumerate(DAY_NAMES_TK)]
+    for meal in meals:
+        if 0 <= meal.day_of_week < 7:
+            days[meal.day_of_week]['meals'].append(meal)
+    return days
+
+
 @app.route('/')
 def home():
     """Esasy menýu sahypasy"""
     categories = Category.query.all()
-    return render_template('client/home.html', categories=categories)
+    weekly_days = _group_weekly_meals()
+    from datetime import datetime as _dt
+    today_index = _dt.now().weekday()
+    return render_template(
+        'client/home.html',
+        categories=categories,
+        weekly_days=weekly_days,
+        today_index=today_index,
+    )
 
 
 @app.route('/track-order')
@@ -237,6 +258,56 @@ def delete_item(id):
     db.session.delete(item)
     db.session.commit()
     return redirect('/admin/items')
+
+
+@app.route('/admin/weekly', methods=['GET', 'POST'])
+def admin_weekly():
+    """Hepdäniň naharlaryny dolandyrmak"""
+    if not session.get('admin'):
+        return redirect('/admin/login')
+
+    if request.method == 'POST':
+        image_path = ''
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                ext = file.filename.rsplit('.', 1)[1].lower()
+                filename = f"{uuid.uuid4().hex}.{ext}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                image_path = f"/static/uploads/{filename}"
+
+        price_raw = request.form.get('price', '').strip()
+        meal = WeeklyMeal(
+            day_of_week=int(request.form['day_of_week']),
+            name=request.form['name'],
+            description=request.form.get('description', ''),
+            price=float(price_raw) if price_raw else None,
+            image=image_path,
+        )
+        db.session.add(meal)
+        db.session.commit()
+        return redirect('/admin/weekly')
+
+    weekly_days = _group_weekly_meals()
+    return render_template('admin/weekly.html', weekly_days=weekly_days, day_names=DAY_NAMES_TK)
+
+
+@app.route('/admin/weekly/delete/<int:id>')
+def delete_weekly(id):
+    """Hepdäniň naharyny pozmak"""
+    if not session.get('admin'):
+        return redirect('/admin/login')
+
+    meal = WeeklyMeal.query.get_or_404(id)
+    if meal.image and meal.image.startswith('/static/uploads/'):
+        image_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), meal.image.lstrip('/'))
+        if os.path.exists(image_file):
+            os.remove(image_file)
+
+    db.session.delete(meal)
+    db.session.commit()
+    return redirect('/admin/weekly')
 
 
 @app.route('/admin/orders')
