@@ -19,7 +19,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db.init_app(app)
-BASE_URL = "http://194.246.82.132:5000"
+BASE_URL = "http://10.192.6.44:5000"
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -423,6 +423,26 @@ def api_get_all_foods():
         'category_id': food.category_id,
         'available': food.available
     } for food in foods]
+    return jsonify(result)
+
+
+@app.route('/api/weekly', methods=['GET'])
+def api_get_weekly_meals():
+    """Hepdäniň naharlaryny günler boýunça JSON formatda almak"""
+    days = _group_weekly_meals()
+    result = []
+    for day in days:
+        result.append({
+            'day_index': day['index'],
+            'day_name': day['name'],
+            'meals': [{
+                'id': meal.id,
+                'name': meal.name,
+                'description': meal.description or '',
+                'price': meal.price,
+                'image': format_image_url(meal.image) if meal.image else None,
+            } for meal in day['meals']]
+        })
     return jsonify(result)
 
 
