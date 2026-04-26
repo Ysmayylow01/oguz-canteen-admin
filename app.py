@@ -19,7 +19,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db.init_app(app)
-BASE_URL = "http://10.192.6.44:5000"
+BASE_URL = "http://89.124.109.45:5000"
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -34,9 +34,9 @@ def format_image_url(image):
 DAY_NAMES_TK = ['Duşenbe', 'Sişenbe', 'Çarşenbe', 'Penşenbe', 'Anna', 'Şenbe', 'Ýekşenbe']
 
 
-def _group_weekly_meals():
+def _group_weekly_meals(section='main'):
     """Hepdäniň naharlaryny günler boýunça toparlamak"""
-    meals = WeeklyMeal.query.order_by(WeeklyMeal.day_of_week, WeeklyMeal.id).all()
+    meals = WeeklyMeal.query.filter_by(section=section).order_by(WeeklyMeal.day_of_week, WeeklyMeal.id).all()
     days = [{'index': i, 'name': name, 'meals': []} for i, name in enumerate(DAY_NAMES_TK)]
     for meal in meals:
         if 0 <= meal.day_of_week < 7:
@@ -47,8 +47,8 @@ def _group_weekly_meals():
 @app.route('/')
 def home():
     """Esasy menýu sahypasy"""
-    categories = Category.query.all()
-    weekly_days = _group_weekly_meals()
+    categories = Category.query.filter_by(section='main').all()
+    weekly_days = _group_weekly_meals(section='main')
     from datetime import datetime as _dt
     today_index = _dt.now().weekday()
     return render_template(
@@ -77,7 +77,8 @@ def create_order():
         order = Order(
             customer_name=data['name'],
             customer_phone=data['phone'],
-            total_amount=sum(item['price'] * item['quantity'] for item in data['items'])
+            total_amount=sum(item['price'] * item['quantity'] for item in data['items']),
+            section=data.get('section', 'main')
         )
         db.session.add(order)
         db.session.flush()
@@ -171,15 +172,20 @@ def admin_categories():
     """Kategoriýalary dolandyrmak"""
     if not session.get('admin'):
         return redirect('/admin/login')
-    
+
+    sec = request.args.get('section', 'main')
+
     if request.method == 'POST':
-        category = Category(name=request.form['name'])
+        category = Category(
+            name=request.form['name'],
+            section=request.form.get('section', 'main')
+        )
         db.session.add(category)
         db.session.commit()
-        return redirect('/admin/categories')
-    
-    categories = Category.query.all()
-    return render_template('admin/categories.html', categories=categories)
+        return redirect(f'/admin/categories?section={request.form.get("section", "main")}')
+
+    categories = Category.query.filter_by(section=sec).all()
+    return render_template('admin/categories.html', categories=categories, current_section=sec)
 
 
 @app.route('/admin/categories/delete/<int:id>')
@@ -199,21 +205,22 @@ def admin_items():
     """Iýmit önümlerini dolandyrmak"""
     if not session.get('admin'):
         return redirect('/admin/login')
-    
+
+    sec = request.args.get('section', 'main')
+
     if request.method == 'POST':
         image_path = ''
-        
-        # Surat upload
+        post_sec = request.form.get('section', 'main')
+
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename and allowed_file(file.filename):
-                # Faýl adyny üýtgeşik et
                 ext = file.filename.rsplit('.', 1)[1].lower()
                 filename = f"{uuid.uuid4().hex}.{ext}"
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
                 image_path = f"/static/uploads/{filename}"
-        
+
         item = FoodItem(
             name=request.form['name'],
             price=float(request.form['price']),
@@ -222,11 +229,11 @@ def admin_items():
         )
         db.session.add(item)
         db.session.commit()
-        return redirect('/admin/items')
-    
-    categories = Category.query.all()
-    items = FoodItem.query.all()
-    return render_template('admin/items.html', categories=categories, items=items)
+        return redirect(f'/admin/items?section={post_sec}')
+
+    categories = Category.query.filter_by(section=sec).all()
+    items = FoodItem.query.join(Category).filter(Category.section == sec).all()
+    return render_template('admin/items.html', categories=categories, items=items, current_section=sec)
 
 
 @app.route('/admin/items/toggle/<int:id>')
@@ -266,8 +273,11 @@ def admin_weekly():
     if not session.get('admin'):
         return redirect('/admin/login')
 
+    sec = request.args.get('section', 'main')
+
     if request.method == 'POST':
         image_path = ''
+        post_sec = request.form.get('section', 'main')
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename and allowed_file(file.filename):
@@ -284,13 +294,14 @@ def admin_weekly():
             description=request.form.get('description', ''),
             price=float(price_raw) if price_raw else None,
             image=image_path,
+            section=post_sec,
         )
         db.session.add(meal)
         db.session.commit()
-        return redirect('/admin/weekly')
+        return redirect(f'/admin/weekly?section={post_sec}')
 
-    weekly_days = _group_weekly_meals()
-    return render_template('admin/weekly.html', weekly_days=weekly_days, day_names=DAY_NAMES_TK)
+    weekly_days = _group_weekly_meals(section=sec)
+    return render_template('admin/weekly.html', weekly_days=weekly_days, day_names=DAY_NAMES_TK, current_section=sec)
 
 
 @app.route('/admin/weekly/delete/<int:id>')
@@ -315,9 +326,10 @@ def admin_orders():
     """Sargytlary dolandyrmak"""
     if not session.get('admin'):
         return redirect('/admin/login')
-    
-    orders = Order.query.order_by(Order.created_at.desc()).all()
-    return render_template('admin/orders.html', orders=orders)
+
+    sec = request.args.get('section', 'main')
+    orders = Order.query.filter_by(section=sec).order_by(Order.created_at.desc()).all()
+    return render_template('admin/orders.html', orders=orders, current_section=sec)
 
 
 @app.route('/admin/orders/update/<int:id>', methods=['POST'])
@@ -334,11 +346,26 @@ def update_order_status(id):
 
 # ==================== INITIALIZATION ====================
 
+def _migrate_section_column():
+    """Köne DB-a section sütünini goşmak (bir gezek işleýär)"""
+    from sqlalchemy import text
+    tables = ['category', 'order', 'weekly_meal']
+    for table in tables:
+        try:
+            db.session.execute(text(
+                f"ALTER TABLE \"{table}\" ADD COLUMN section VARCHAR(20) DEFAULT 'main'"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
 def init_db():
     """Database-ni başlatmak we başlangyç maglumatlary goşmak"""
     with app.app_context():
         db.create_all()
-        
+        _migrate_section_column()
+
         # Default admin döret
         if not Admin.query.first():
             admin = Admin(
@@ -389,16 +416,17 @@ def init_db():
         print("👤 Admin maglumatlary: username='admin', password='admin123'")
 
 
-#hello
 @app.route('/api/categories', methods=['GET'])
 def api_get_categories():
-    """Ähli kategoriýalary JSON formatda almak"""
-    categories = Category.query.all()
+    """Ähli kategoriýalary JSON formatda almak (section boýunça filter)"""
+    section = request.args.get('section', 'main')
+    categories = Category.query.filter_by(section=section).all()
     result = []
     for category in categories:
         result.append({
             'id': category.id,
             'name': category.name,
+            'section': category.section,
             'items': [{
                 'id': item.id,
                 'name': item.name,
@@ -413,8 +441,12 @@ def api_get_categories():
 
 @app.route('/api/foods', methods=['GET'])
 def api_get_all_foods():
-    """Ähli iýmit önümlerini almak"""
-    foods = FoodItem.query.filter_by(available=True).all()
+    """Ähli iýmit önümlerini almak (section boýunça filter)"""
+    section = request.args.get('section', 'main')
+    foods = FoodItem.query.join(Category).filter(
+        FoodItem.available == True,
+        Category.section == section
+    ).all()
     result = [{
         'id': food.id,
         'name': food.name,
@@ -428,8 +460,9 @@ def api_get_all_foods():
 
 @app.route('/api/weekly', methods=['GET'])
 def api_get_weekly_meals():
-    """Hepdäniň naharlaryny günler boýunça JSON formatda almak"""
-    days = _group_weekly_meals()
+    """Hepdäniň naharlaryny günler boýunça JSON formatda almak (section boýunça filter)"""
+    section = request.args.get('section', 'main')
+    days = _group_weekly_meals(section=section)
     result = []
     for day in days:
         result.append({

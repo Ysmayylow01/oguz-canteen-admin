@@ -18,11 +18,24 @@
 
 <div class="container fade-in">
 
+    <!-- SECTION TABS -->
+    <div class="section-tabs">
+        <a href="/admin/categories?section=main"
+           class="section-tab {% if current_section == 'main' %}active{% endif %}">
+            🏠 Esasy Canteen
+        </a>
+        <a href="/admin/categories?section=language"
+           class="section-tab {% if current_section == 'language' %}active{% endif %}">
+            📚 Dil Öwreniş Bölümi
+        </a>
+    </div>
+
     <!-- ADD CATEGORY -->
     <div class="card glass">
-        <h3>➕ Täze kategoriýa goş</h3>
+        <h3>➕ Täze kategoriýa goş — {{ 'Esasy Canteen' if current_section == 'main' else 'Dil Öwreniş Bölümi' }}</h3>
 
         <form method="POST" class="form">
+            <input type="hidden" name="section" value="{{ current_section }}">
             <input type="text" name="name" placeholder="Kategoriýa ady..." required>
             <button type="submit">Goş</button>
         </form>
@@ -118,6 +131,30 @@
 
 /* TABLE IMPROVE */
 td strong {
+    color: white;
+}
+
+/* SECTION TABS */
+.section-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.section-tab {
+    padding: 10px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    background: rgba(255,255,255,0.08);
+    color: #94a3b8;
+    font-weight: 600;
+    transition: 0.3s;
+}
+.section-tab.active {
+    background: #3D9AF0;
+    color: white;
+}
+.section-tab:hover:not(.active) {
+    background: rgba(255,255,255,0.15);
     color: white;
 }
 

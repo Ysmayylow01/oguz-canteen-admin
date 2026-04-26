@@ -18,11 +18,24 @@
 
 <div class="container fade-in">
 
+    <!-- SECTION TABS -->
+    <div class="section-tabs">
+        <a href="/admin/items?section=main"
+           class="section-tab {% if current_section == 'main' %}active{% endif %}">
+            🏠 Esasy Canteen
+        </a>
+        <a href="/admin/items?section=language"
+           class="section-tab {% if current_section == 'language' %}active{% endif %}">
+            📚 Dil Öwreniş Bölümi
+        </a>
+    </div>
+
     <!-- ADD ITEM -->
     <div class="card glass">
-        <h3>➕ Täze önüm goş</h3>
+        <h3>➕ Täze önüm goş — {{ 'Esasy Canteen' if current_section == 'main' else 'Dil Öwreniş Bölümi' }}</h3>
 
         <form method="POST" enctype="multipart/form-data" class="form">
+            <input type="hidden" name="section" value="{{ current_section }}">
             <input type="text" name="name" placeholder="Önümiň ady..." required>
             <input type="number" name="price" placeholder="Bahasy" step="0.01" required>
 
@@ -194,6 +207,12 @@
 .action-btn:hover {
     transform: scale(1.1);
 }
+
+/* SECTION TABS */
+.section-tabs { display:flex; gap:10px; margin-bottom:20px; }
+.section-tab { padding:10px 20px; border-radius:10px; text-decoration:none; background:rgba(255,255,255,0.08); color:#94a3b8; font-weight:600; transition:0.3s; }
+.section-tab.active { background:#3D9AF0; color:white; }
+.section-tab:hover:not(.active) { background:rgba(255,255,255,0.15); color:white; }
 
 /* STATUS override (reuse base) */
 .ready {
