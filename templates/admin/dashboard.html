@@ -9,6 +9,7 @@
         <a href="/admin/categories">Kategoriýa</a>
         <a href="/admin/items">Önüm</a>
         <a href="/admin/weekly">Hepde</a>
+        <a href="/admin/banners">Banner</a>
         <a href="/admin/orders">Sargyt</a>
         <a href="/admin/logout">Çyk</a>
     </div>
@@ -46,6 +47,7 @@
                 <tr>
                     <th>#</th>
                     <th>Müşderi</th>
+                    <th>Önümler</th>
                     <th>Jemi</th>
                     <th>Status</th>
                     <th>Sene</th>
@@ -57,10 +59,15 @@
                 <tr>
                     <td>#{{ order.id }}</td>
                     <td>{{ order.customer_name }}</td>
+                    <td style="font-size:0.85rem;color:#94a3b8;">
+                        {% for item in order.items %}
+                        <span>{{ item.quantity }}x {{ item.food_item.name }}{% if item.note %} <em style="color:#f59e0b;">({{ item.note }})</em>{% endif %}</span>{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
                     <td>{{ "%.0f"|format(order.total_amount) }} manat</td>
 
                     <td>
-                        <span class="status 
+                        <span class="status
                         {% if order.status == 'pending' %}pending
                         {% elif order.status == 'preparing' %}preparing
                         {% elif order.status == 'ready' %}ready

@@ -11,6 +11,7 @@
         <a href="/admin/categories">Kategoriýa</a>
         <a href="/admin/items">Önüm</a>
         <a href="/admin/weekly">Hepde</a>
+        <a href="/admin/banners">Banner</a>
         <a href="/admin/orders">Sargyt</a>
         <a href="/admin/logout">Çyk</a>
     </div>
@@ -46,6 +47,8 @@
                 {% endfor %}
             </select>
 
+            <input type="text" name="description" placeholder="Beýany (islege görä)">
+
             <label class="file-upload-label">
                 <span id="file-name">📷 Surat saýlaň</span>
                 <input type="file" name="image" accept="image/*" onchange="updateFileName(this)">
@@ -63,6 +66,7 @@
                 <tr>
                     <th>#</th>
                     <th>Ady</th>
+                    <th>Beýany</th>
                     <th>Kategoriýa</th>
                     <th>Bahasy</th>
                     <th>Status</th>
@@ -77,6 +81,10 @@
 
                     <td>
                         <strong>{{ item.name }}</strong>
+                    </td>
+
+                    <td style="max-width:200px;color:#94a3b8;font-size:13px;">
+                        {{ item.description or '—' }}
                     </td>
 
                     <td>{{ item.category.name }}</td>

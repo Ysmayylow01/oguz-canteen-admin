@@ -28,6 +28,7 @@ class FoodItem(db.Model):
     """Iýmit önümleri üçin model"""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float, nullable=False)
     image = db.Column(db.Text, nullable=True)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
@@ -59,10 +60,23 @@ class OrderItem(db.Model):
     food_item_id = db.Column(db.Integer, db.ForeignKey('food_item.id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
+    note = db.Column(db.Text, nullable=True)
     food_item = db.relationship('FoodItem')
 
     def __repr__(self):
         return f'<OrderItem {self.id}>'
+
+
+class Banner(db.Model):
+    """Bannerlary saklamak üçin model"""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=True)
+    image = db.Column(db.Text, nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+
+    def __repr__(self):
+        return f'<Banner {self.id}>'
 
 
 class WeeklyMeal(db.Model):

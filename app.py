@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from models import db, Admin, Category, FoodItem, Order, OrderItem, WeeklyMeal
+from models import db, Admin, Category, FoodItem, Order, OrderItem, WeeklyMeal, Banner
 import os
 import uuid
 
@@ -19,7 +19,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db.init_app(app)
-BASE_URL = "http://89.124.109.45:5000"
+BASE_URL = "http://89.124.124.123:5000"
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -51,11 +51,13 @@ def home():
     weekly_days = _group_weekly_meals(section='main')
     from datetime import datetime as _dt
     today_index = _dt.now().weekday()
+    banners = Banner.query.filter_by(active=True).order_by(Banner.sort_order, Banner.id).all()
     return render_template(
         'client/home.html',
         categories=categories,
         weekly_days=weekly_days,
         today_index=today_index,
+        banners=banners,
     )
 
 
@@ -89,7 +91,8 @@ def create_order():
                 order_id=order.id,
                 food_item_id=item['id'],
                 quantity=item['quantity'],
-                price=item['price'] * item['quantity']
+                price=item['price'] * item['quantity'],
+                note=item.get('note', '')
             )
             db.session.add(order_item)
         
@@ -223,6 +226,7 @@ def admin_items():
 
         item = FoodItem(
             name=request.form['name'],
+            description=request.form.get('description', ''),
             price=float(request.form['price']),
             category_id=int(request.form['category_id']),
             image=image_path
@@ -346,15 +350,20 @@ def update_order_status(id):
 
 # ==================== INITIALIZATION ====================
 
-def _migrate_section_column():
-    """Köne DB-a section sütünini goşmak (bir gezek işleýär)"""
+def _migrate_columns():
+    """Köne DB-a ýetmeýän sütünleri goşmak (bir gezek işleýär)"""
     from sqlalchemy import text
-    tables = ['category', 'order', 'weekly_meal']
-    for table in tables:
+    migrations = [
+        ("category",    "section VARCHAR(20) DEFAULT 'main'"),
+        ("\"order\"",   "section VARCHAR(20) DEFAULT 'main'"),
+        ("weekly_meal", "section VARCHAR(20) DEFAULT 'main'"),
+        ("food_item",   "description TEXT"),
+        ("order_item",  "note TEXT"),
+        ("banner",      "sort_order INTEGER DEFAULT 0"),
+    ]
+    for table, column_def in migrations:
         try:
-            db.session.execute(text(
-                f"ALTER TABLE \"{table}\" ADD COLUMN section VARCHAR(20) DEFAULT 'main'"
-            ))
+            db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {column_def}"))
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -364,7 +373,7 @@ def init_db():
     """Database-ni başlatmak we başlangyç maglumatlary goşmak"""
     with app.app_context():
         db.create_all()
-        _migrate_section_column()
+        _migrate_columns()
 
         # Default admin döret
         if not Admin.query.first():
@@ -430,6 +439,7 @@ def api_get_categories():
             'items': [{
                 'id': item.id,
                 'name': item.name,
+                'description': item.description or '',
                 'price': item.price,
                 'image': format_image_url(item.image),
                 'category_id': item.category_id,
@@ -450,6 +460,7 @@ def api_get_all_foods():
     result = [{
         'id': food.id,
         'name': food.name,
+        'description': food.description or '',
         'price': food.price,
         'image': format_image_url(food.image),
         'category_id': food.category_id,
@@ -489,12 +500,83 @@ def api_get_foods_by_category(category_id):
     result = [{
         'id': food.id,
         'name': food.name,
+        'description': food.description or '',
         'price': food.price,
         'image': format_image_url(food.image),
         'category_id': food.category_id,
         'available': food.available
     } for food in foods]
     return jsonify(result)
+
+
+# ==================== BANNER ROUTES ====================
+
+@app.route('/api/banners', methods=['GET'])
+def api_get_banners():
+    """Aktyw bannerlary almak"""
+    banners = Banner.query.filter_by(active=True).order_by(Banner.sort_order, Banner.id).all()
+    return jsonify([{
+        'id': b.id,
+        'title': b.title or '',
+        'image': format_image_url(b.image),
+        'active': b.active
+    } for b in banners])
+
+
+@app.route('/admin/banners', methods=['GET', 'POST'])
+def admin_banners():
+    """Bannerlary dolandyrmak"""
+    if not session.get('admin'):
+        return redirect('/admin/login')
+
+    if request.method == 'POST':
+        image_path = ''
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                ext = file.filename.rsplit('.', 1)[1].lower()
+                filename = f"{uuid.uuid4().hex}.{ext}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                image_path = f"/static/uploads/{filename}"
+
+        banner = Banner(
+            title=request.form.get('title', ''),
+            image=image_path,
+            active=True,
+            sort_order=int(request.form.get('sort_order', 0))
+        )
+        db.session.add(banner)
+        db.session.commit()
+        return redirect('/admin/banners')
+
+    banners = Banner.query.order_by(Banner.sort_order, Banner.id).all()
+    return render_template('admin/banners.html', banners=banners)
+
+
+@app.route('/admin/banners/toggle/<int:id>')
+def toggle_banner(id):
+    if not session.get('admin'):
+        return redirect('/admin/login')
+    banner = Banner.query.get_or_404(id)
+    banner.active = not banner.active
+    db.session.commit()
+    return redirect('/admin/banners')
+
+
+@app.route('/admin/banners/delete/<int:id>')
+def delete_banner(id):
+    if not session.get('admin'):
+        return redirect('/admin/login')
+    banner = Banner.query.get_or_404(id)
+    if banner.image and banner.image.startswith('/static/uploads/'):
+        image_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), banner.image.lstrip('/'))
+        if os.path.exists(image_file):
+            os.remove(image_file)
+    db.session.delete(banner)
+    db.session.commit()
+    return redirect('/admin/banners')
+
 
 if __name__ == '__main__':
     init_db()

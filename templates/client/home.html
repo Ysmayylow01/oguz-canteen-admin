@@ -21,13 +21,25 @@
     <div class="slider glass">
 
     <div class="slides" id="slides">
-        <img src="{{ url_for('static', filename='img/banner1.png') }}">
-        <img src="{{ url_for('static', filename='img/banner2.png') }}">
+        {% if banners %}
+            {% for banner in banners %}
+            <img src="{{ banner.image }}">
+            {% endfor %}
+        {% else %}
+            <img src="{{ url_for('static', filename='img/banner1.png') }}">
+            <img src="{{ url_for('static', filename='img/banner2.png') }}">
+        {% endif %}
     </div>
 
     <div class="dots">
-        <span onclick="goSlide(0)"></span>
-        <span onclick="goSlide(1)"></span>
+        {% if banners %}
+            {% for banner in banners %}
+            <span onclick="goSlide({{ loop.index0 }})"></span>
+            {% endfor %}
+        {% else %}
+            <span onclick="goSlide(0)"></span>
+            <span onclick="goSlide(1)"></span>
+        {% endif %}
     </div>
 
 </div>

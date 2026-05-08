@@ -11,6 +11,7 @@
         <a href="/admin/categories">Kategoriýa</a>
         <a href="/admin/items">Önüm</a>
         <a href="/admin/weekly">Hepde</a>
+        <a href="/admin/banners">Banner</a>
         <a href="/admin/orders">Sargyt</a>
         <a href="/admin/logout">Çyk</a>
     </div>
@@ -48,14 +49,14 @@
 
             <tbody>
                 {% for order in orders %}
-                <tr>
+                <tr class="order-row" onclick="toggleItems('items-{{ order.id }}')" style="cursor:pointer;">
                     <td>#{{ order.id }}</td>
                     <td><strong>{{ order.customer_name }}</strong></td>
                     <td>{{ order.customer_phone }}</td>
                     <td>{{ "%.0f"|format(order.total_amount) }} manat</td>
 
                     <td>
-                        <span class="status 
+                        <span class="status
                         {% if order.status == 'pending' %}pending
                         {% elif order.status == 'preparing' %}preparing
                         {% elif order.status == 'ready' %}ready
@@ -66,27 +67,46 @@
 
                     <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
 
-                    <td>
+                    <td onclick="event.stopPropagation()">
                         <select class="status-select"
                                 data-id="{{ order.id }}"
                                 onchange="updateOrderStatus(this)">
-                            
-                            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>
-                                Garaşylýar
-                            </option>
-
-                            <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>
-                                Taýýarlanýar
-                            </option>
-
-                            <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>
-                                Taýýar
-                            </option>
-
-                            <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>
-                                Tamamlandy
-                            </option>
+                            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Garaşylýar</option>
+                            <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>Taýýarlanýar</option>
+                            <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>Taýýar</option>
+                            <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Tamamlandy</option>
                         </select>
+                    </td>
+                </tr>
+                <tr id="items-{{ order.id }}" class="items-row" style="display:none;">
+                    <td colspan="7" style="padding:0;">
+                        <div class="items-detail">
+                            <strong style="color:#3D9AF0;">🛒 Önümler:</strong>
+                            <table class="inner-table">
+                                <thead>
+                                    <tr>
+                                        <th>Önüm</th>
+                                        <th>Mukdar</th>
+                                        <th>Baha</th>
+                                        <th>Bellik</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for item in order.items %}
+                                <tr>
+                                    <td>{{ item.food_item.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ "%.0f"|format(item.price) }} manat</td>
+                                    <td>
+                                        {% if item.note %}
+                                        <span class="note-badge">📝 {{ item.note }}</span>
+                                        {% else %}—{% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -127,11 +147,22 @@ td strong {
 .section-tab { padding:10px 20px; border-radius:10px; text-decoration:none; background:rgba(255,255,255,0.08); color:#94a3b8; font-weight:600; transition:0.3s; }
 .section-tab.active { background:#3D9AF0; color:white; }
 .section-tab:hover:not(.active) { background:rgba(255,255,255,0.15); color:white; }
+.order-row:hover { background:rgba(255,255,255,0.04); }
+.items-detail { padding:12px 20px; background:rgba(0,0,0,0.2); }
+.inner-table { width:100%; border-collapse:collapse; margin-top:8px; }
+.inner-table th,.inner-table td { padding:6px 12px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; }
+.inner-table th { color:#94a3b8; }
+.note-badge { background:rgba(61,154,240,0.15); color:#3D9AF0; padding:2px 8px; border-radius:6px; font-size:12px; }
 
 </style>
 
 <!-- SCRIPT -->
 <script>
+
+function toggleItems(id) {
+    const row = document.getElementById(id);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
 
 function updateOrderStatus(el) {
     const orderId = el.getAttribute("data-id");

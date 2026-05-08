@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Bannerlar{% endblock %}
+
+{% block content %}
+
+<div class="navbar glass fade-in">
+    <h2>🖼 Bannerlar</h2>
+    <div>
+        <a href="/admin">Dashboard</a>
+        <a href="/admin/categories">Kategoriýa</a>
+        <a href="/admin/items">Önüm</a>
+        <a href="/admin/weekly">Hepde</a>
+        <a href="/admin/banners">Banner</a>
+        <a href="/admin/orders">Sargyt</a>
+        <a href="/admin/logout">Çyk</a>
+    </div>
+</div>
+
+<div class="container fade-in">
+
+    <!-- ADD BANNER -->
+    <div class="card glass">
+        <h3>➕ Täze banner goş</h3>
+        <form method="POST" enctype="multipart/form-data" class="form">
+            <input type="text" name="title" placeholder="Banner ady (islege görä)">
+            <input type="number" name="sort_order" placeholder="Tertip belgisi (0, 1, 2...)" value="0" min="0">
+            <label class="file-upload-label">
+                <span id="file-name">📷 Surat saýlaň (hökmany)</span>
+                <input type="file" name="image" accept="image/*" onchange="updateFileName(this)" required>
+            </label>
+            <button type="submit">Goş</button>
+        </form>
+    </div>
+
+    <!-- BANNER TABLE -->
+    <div class="card glass" style="margin-top:20px;">
+        <h3>📋 Bannerlar sanawy</h3>
+
+        {% if banners %}
+        <div class="banner-grid">
+            {% for banner in banners %}
+            <div class="banner-card {{ 'inactive' if not banner.active else '' }}">
+                <img src="{{ banner.image }}" alt="banner" class="banner-img">
+                <div class="banner-info">
+                    <span class="banner-title">{{ banner.title or '(adsyz)' }}</span>
+                    <span class="banner-order">Tertip: {{ banner.sort_order }}</span>
+                    <div class="banner-actions">
+                        <button class="action-btn {{ 'edit' if banner.active else 'delete' }}"
+                                onclick="toggleBanner({{ banner.id }})">
+                            {{ '✔ Aktyw' if banner.active else '✖ Öçürilen' }}
+                        </button>
+                        <button class="action-btn delete"
+                                onclick="deleteBanner({{ banner.id }})">🗑</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#94a3b8;margin-top:10px;">Heniz banner goşulmady.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<style>
+.form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.form input {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+.form input::placeholder { color: #94a3b8; }
+.form button {
+    background: #3D9AF0;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    padding: 12px;
+    transition: 0.3s;
+}
+.form button:hover { background: #2563eb; }
+.file-upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.file-upload-label:hover { background: rgba(255,255,255,0.15); }
+.file-upload-label input[type="file"] { display: none; }
+
+.banner-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+}
+.banner-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: 0.3s;
+}
+.banner-card.inactive { opacity: 0.45; }
+.banner-img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+.banner-info {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.banner-title { color: white; font-weight: 600; font-size: 14px; }
+.banner-order { color: #94a3b8; font-size: 12px; }
+.banner-actions { display: flex; gap: 8px; margin-top: 6px; }
+.action-btn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    transition: 0.3s;
+}
+.action-btn.edit { background: rgba(0,200,100,0.2); color: #00ffa6; }
+.action-btn.delete { background: rgba(255,0,0,0.2); color: #ff6b6b; }
+.action-btn:hover { transform: scale(1.05); }
+</style>
+
+<script>
+function updateFileName(input) {
+    var label = document.getElementById('file-name');
+    if (input.files && input.files[0]) {
+        label.textContent = '📷 ' + input.files[0].name;
+    } else {
+        label.textContent = '📷 Surat saýlaň (hökmany)';
+    }
+}
+function toggleBanner(id) {
+    window.location.href = '/admin/banners/toggle/' + id;
+}
+function deleteBanner(id) {
+    if (confirm('Bu banneri pozmak isleýärsiňizmi?')) {
+        window.location.href = '/admin/banners/delete/' + id;
+    }
+}
+</script>
+
+{% endblock %}
